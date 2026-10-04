@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Firebase Save Test</title>
+</head>
+
+<body>
+
+  <h1>Firebase Save Test</h1>
+
+  <label>
+    Student ID:
+    <input id="studentId" type="text">
+  </label>
+
+  <br><br>
+
+  <label>
+    Work:
+    <br>
+    <textarea id="work" rows="10" cols="50"></textarea>
+  </label>
+
+  <br><br>
+
+  <button id="saveBtn">SAVE</button>
+  <button id="loadBtn">LOAD</button>
+
+  <p id="status"></p>
+
+  <script type="module">
+
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+
+    // REPLACE THIS WITH YOUR FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "PASTE YOURS HERE",
+      authDomain: "PASTE YOURS HERE",
+      projectId: "PASTE YOURS HERE",
+      storageBucket: "PASTE YOURS HERE",
+      messagingSenderId: "PASTE YOURS HERE",
+      appId: "PASTE YOURS HERE"
+    };
+
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+
+    const studentId = document.getElementById("studentId");
+    const work = document.getElementById("work");
+    const status = document.getElementById("status");
+
+
+    document
+      .getElementById("saveBtn")
+      .addEventListener("click", async () => {
+
+        const id = studentId.value.trim();
+
+        if (!id) {
+          status.textContent = "Enter a student ID.";
+          return;
+        }
+
+        try {
+
+          await setDoc(
+            doc(db, "students", id),
+            {
+              work: work.value,
+              updated: serverTimestamp()
+            },
+            { merge: true }
+          );
+
+          status.textContent = "SAVED ✓";
+
+        } catch (error) {
+
+          console.error(error);
+          status.textContent = "SAVE FAILED";
+
+        }
+
+      });
+
+
+    document
+      .getElementById("loadBtn")
+      .addEventListener("click", async () => {
+
+        const id = studentId.value.trim();
+
+        if (!id) {
+          status.textContent = "Enter a student ID.";
+          return;
+        }
+
+        try {
+
+          const snapshot =
+            await getDoc(doc(db, "students", id));
+
+          if (snapshot.exists()) {
+
+            work.value =
+              snapshot.data().work || "";
+
+            status.textContent = "LOADED ✓";
+
+          } else {
+
+            status.textContent =
+              "No saved work found.";
+
+          }
+
+        } catch (error) {
+
+          console.error(error);
+          status.textContent = "LOAD FAILED";
+
+        }
+
+      });
+
+  </script>
+
+</body>
+</html>
