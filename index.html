@@ -1,38 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Firebase Save Test</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TestBall Firebase Save Test</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #f7f7fb;
+      color: #222;
+    }
+
+    .card {
+      background: white;
+      border: 2px solid #222;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 6px 6px 0 #222;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      font: inherit;
+      padding: 12px;
+      border: 2px solid #aaa;
+      border-radius: 8px;
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      font: inherit;
+      font-weight: bold;
+      padding: 12px 20px;
+      border: 2px solid #222;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #eee;
+    }
+
+    #saveBtn {
+      background: #d8ffd8;
+    }
+
+    #loadBtn {
+      background: #dcecff;
+    }
+
+    #status {
+      min-height: 24px;
+      margin-top: 18px;
+      font-weight: bold;
+    }
+
+    .note {
+      margin-top: 24px;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  </style>
 </head>
 
 <body>
+  <div class="card">
+    <h1>TestBall Firebase Save Test</h1>
+    <p>
+      Type a student ID, enter some work, save it, then try loading it
+      from another browser or device.
+    </p>
 
-  <h1>Firebase Save Test</h1>
+    <label for="studentId">Student ID</label>
+    <input
+      id="studentId"
+      type="text"
+      autocomplete="off"
+      placeholder="Example: robert-test"
+    />
 
-  <label>
-    Student ID:
-    <input id="studentId" type="text">
-  </label>
+    <label for="work">Work</label>
+    <textarea
+      id="work"
+      placeholder="Type something here..."
+    ></textarea>
 
-  <br><br>
+    <div class="buttons">
+      <button id="saveBtn" type="button">SAVE</button>
+      <button id="loadBtn" type="button">LOAD</button>
+    </div>
 
-  <label>
-    Work:
-    <br>
-    <textarea id="work" rows="10" cols="50"></textarea>
-  </label>
+    <p id="status"></p>
 
-  <br><br>
-
-  <button id="saveBtn">SAVE</button>
-  <button id="loadBtn">LOAD</button>
-
-  <p id="status"></p>
+    <p class="note">
+      Test only. Before students use this for real, add authentication
+      and proper Firestore security rules.
+    </p>
+  </div>
 
   <script type="module">
+    import { initializeApp } from
+      "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 
-    import { initializeApp }
-      from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+    import { getAnalytics } from
+      "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
 
     import {
       getFirestore,
@@ -40,103 +142,93 @@
       setDoc,
       getDoc,
       serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+    } from
+      "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 
-    // REPLACE THIS WITH YOUR FIREBASE CONFIG
     const firebaseConfig = {
-      apiKey: "PASTE YOURS HERE",
-      authDomain: "PASTE YOURS HERE",
-      projectId: "PASTE YOURS HERE",
-      storageBucket: "PASTE YOURS HERE",
-      messagingSenderId: "PASTE YOURS HERE",
-      appId: "PASTE YOURS HERE"
+      apiKey: "AIzaSyCTltpeEuNyRyCC6V4FiWCiDryu5ZBhqrw",
+      authDomain: "testball42.firebaseapp.com",
+      projectId: "testball42",
+      storageBucket: "testball42.firebasestorage.app",
+      messagingSenderId: "531238629863",
+      appId: "1:531238629863:web:174e6fd16b67b501084d42",
+      measurementId: "G-BGL6QQQ4JQ"
     };
 
 
     const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
 
-    const studentId = document.getElementById("studentId");
-    const work = document.getElementById("work");
+    const studentIdInput = document.getElementById("studentId");
+    const workInput = document.getElementById("work");
     const status = document.getElementById("status");
+    const saveBtn = document.getElementById("saveBtn");
+    const loadBtn = document.getElementById("loadBtn");
 
 
-    document
-      .getElementById("saveBtn")
-      .addEventListener("click", async () => {
+    function getStudentId() {
+      return studentIdInput.value.trim();
+    }
 
-        const id = studentId.value.trim();
 
-        if (!id) {
-          status.textContent = "Enter a student ID.";
-          return;
+    saveBtn.addEventListener("click", async () => {
+      const studentId = getStudentId();
+
+      if (!studentId) {
+        status.textContent = "Enter a student ID first.";
+        return;
+      }
+
+      status.textContent = "Saving...";
+
+      try {
+        await setDoc(
+          doc(db, "students", studentId),
+          {
+            work: workInput.value,
+            updated: serverTimestamp()
+          },
+          { merge: true }
+        );
+
+        status.textContent = "SAVED ✓";
+      } catch (error) {
+        console.error("Save error:", error);
+        status.textContent = "SAVE FAILED — check the browser console.";
+      }
+    });
+
+
+    loadBtn.addEventListener("click", async () => {
+      const studentId = getStudentId();
+
+      if (!studentId) {
+        status.textContent = "Enter a student ID first.";
+        return;
+      }
+
+      status.textContent = "Loading...";
+
+      try {
+        const snapshot = await getDoc(
+          doc(db, "students", studentId)
+        );
+
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          workInput.value = data.work ?? "";
+          status.textContent = "LOADED ✓";
+        } else {
+          status.textContent = "No saved work found for that ID.";
         }
-
-        try {
-
-          await setDoc(
-            doc(db, "students", id),
-            {
-              work: work.value,
-              updated: serverTimestamp()
-            },
-            { merge: true }
-          );
-
-          status.textContent = "SAVED ✓";
-
-        } catch (error) {
-
-          console.error(error);
-          status.textContent = "SAVE FAILED";
-
-        }
-
-      });
-
-
-    document
-      .getElementById("loadBtn")
-      .addEventListener("click", async () => {
-
-        const id = studentId.value.trim();
-
-        if (!id) {
-          status.textContent = "Enter a student ID.";
-          return;
-        }
-
-        try {
-
-          const snapshot =
-            await getDoc(doc(db, "students", id));
-
-          if (snapshot.exists()) {
-
-            work.value =
-              snapshot.data().work || "";
-
-            status.textContent = "LOADED ✓";
-
-          } else {
-
-            status.textContent =
-              "No saved work found.";
-
-          }
-
-        } catch (error) {
-
-          console.error(error);
-          status.textContent = "LOAD FAILED";
-
-        }
-
-      });
-
+      } catch (error) {
+        console.error("Load error:", error);
+        status.textContent = "LOAD FAILED — check the browser console.";
+      }
+    });
   </script>
-
 </body>
 </html>
